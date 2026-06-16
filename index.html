@@ -29,12 +29,14 @@
     </div>
 
    <script>
-    // 1. 수파베이스 설정 (이미 중복 선언을 방지하도록 구조화)
+    // 1. 중복 선언 방지를 위해 전역 변수명 변경 (mySupabase 사용)
     const SUPABASE_URL = 'https://wbivcaastywioldxvbjc.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_zeZRYYUREQcJyUUsqK-4tg_nmJ8zNuH';
     
-    // 전역 변수로 supabase 클라이언트 생성
-    const mySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 이미 supabase가 정의되어 있는지 확인하고 생성
+    const mySupabase = (typeof supabase !== 'undefined') 
+        ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
+        : null;
 
     let calendar;
 
@@ -44,8 +46,12 @@
             initialView: 'dayGridMonth',
             locale: 'ko',
             events: async function(info, successCallback, failureCallback) {
+                if (!mySupabase) {
+                    console.error("Supabase 클라이언트가 초기화되지 않았습니다.");
+                    return;
+                }
                 try {
-                    // mySupabase 사용
+                    // 테이블명 'tasks', 컬럼명 'due_date'로 정확히 조회
                     const { data, error } = await mySupabase
                         .from('tasks') 
                         .select('*');
@@ -70,6 +76,7 @@
         calendar.render();
     });
 
+    // 필터링 기능 (유지)
     function filterCalendar(owner, btnElement) {
         btnElement.parentNode.querySelectorAll('button').forEach(b => {
             b.classList.remove('bg-slate-900', 'text-white');
