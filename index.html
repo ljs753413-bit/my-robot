@@ -50,14 +50,14 @@
                         if (error) throw error;
 
                         const formattedEvents = data.map(item => {
-                            // 팀원별 색상 매핑
-                            let eventColor = '#64748b'; 
+                            // 필터 버튼의 색상과 일치하도록 정확한 색상 코드 매핑
+                            let eventColor = '#64748b'; // 기본 색상 (slate-500)
                             switch(item.owner) {
-                                case '문창수': eventColor = '#ef4444'; break; // 빨강
-                                case '이승직': eventColor = '#3b82f6'; break; // 파랑
-                                case '이도협': eventColor = '#10b981'; break; // 초록
-                                case '윤진성': eventColor = '#f59e0b'; break; // 주황
-                                case '김성학': eventColor = '#8b5cf6'; break; // 보라
+                                case '문창수': eventColor = '#e11d48'; break; // 빨강 (red-600)
+                                case '이승직': eventColor = '#2563eb'; break; // 파랑 (blue-600)
+                                case '이도협': eventColor = '#059669'; break; // 초록 (emerald-600)
+                                case '윤진성': eventColor = '#d97706'; break; // 주황 (amber-600)
+                                case '김성학': eventColor = '#7c3aed'; break; // 보라 (purple-600)
                             }
 
                             return {
