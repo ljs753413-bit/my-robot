@@ -6,6 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 p-8">
 
@@ -28,44 +29,50 @@
     </div>
 
     <script>
+        const SUPABASE_URL = 'https://wbivcaastywioldxvbjc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_zeZRYYUREQcJyUUsqK-4tg_nmJ8zNuH';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let calendar;
 
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendar');
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
                 locale: 'ko',
-                // 서버에서 데이터를 가져오는 핵심 설정
-                events: {
-                    url: '/api/events',
-                    method: 'GET',
-                    cache: false // 💡 캐시 금지: 서버에서 항상 최신 데이터를 받아옵니다.
+                // 수정된 부분: 테이블 'tasks', 날짜 컬럼 'due_date'로 변경
+                events: async function(info, successCallback, failureCallback) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('tasks') 
+                            .select('*');
+                        
+                        if (error) throw error;
+
+                        const formattedEvents = data.map(item => ({
+                            title: item.title,
+                            start: item.due_date, 
+                            extendedProps: { owner: item.owner }
+                        }));
+                        successCallback(formattedEvents);
+                    } catch (error) {
+                        console.error('데이터 로드 실패:', error);
+                        failureCallback(error);
+                    }
                 },
                 eventClick: function(info) {
                     alert(`📋 [업무 상세 내용]\n${info.event.title}`);
-                },
-                eventDidMount: function(info) {
-                    // 데이터가 그려질 때 요소가 보이도록 강제 설정
-                    info.el.style.display = 'block';
                 }
             });
             calendar.render();
         });
 
         function filterCalendar(owner, btnElement) {
-            // 버튼 스타일 변경
             btnElement.parentNode.querySelectorAll('button').forEach(b => {
                 b.classList.remove('bg-slate-900', 'text-white');
-                if(b.textContent !== '전체보기') b.classList.add('bg-opacity-20');
             });
             btnElement.classList.add('bg-slate-900', 'text-white');
 
-            // 달력 필터링
             calendar.getEvents().forEach(ev => {
                 if (owner === '전체' || ev.extendedProps.owner === owner) {
                     ev.setProp('display', 'auto');
