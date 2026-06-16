@@ -1,0 +1,56 @@
+const express = require('express');
+const xlsx = require('xlsx');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+app.use(express.static('public'));
+
+app.get('/api/events', (req, res) => {
+    const downloadPath = path.join(__dirname, 'downloads');
+    const files = fs.readdirSync(downloadPath).filter(f => f.endsWith('.xlsx'));
+    if (files.length === 0) return res.json([]);
+
+    const workbook = xlsx.readFile(path.join(downloadPath, files[0]));
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet); // 헤더를 기준으로 객체 자동 생성
+
+const events = data.map(item => {
+        const keys = Object.keys(item);
+        const tKey = keys.find(k => k.replace(/\s/g, '').includes('주제'));
+        const dKey = keys.find(k => k.replace(/\s/g, '').includes('기한'));
+        const oKey = keys.find(k => k.replace(/\s/g, '').includes('담당자'));
+
+        if (!tKey || !dKey || !oKey) return null;
+
+        // 💡 핵심: 엑셀 숫자 날짜(46185...)를 YYYY-MM-DD로 강제 변환
+        let rawDate = item[dKey];
+        let eventDate = "";
+        if (typeof rawDate === 'number') {
+            // 엑셀 날짜를 자바스크립트 날짜로 변환
+            const dateObj = new Date((rawDate - 25569) * 86400 * 1000);
+            eventDate = dateObj.toISOString().split('T')[0];
+        } else {
+            eventDate = String(rawDate).substring(0, 10);
+        }
+
+        return {
+            title: `[${item[oKey]}] ${String(item[tKey]).split('/')[0]}`,
+            start: eventDate, // 이제 완벽한 YYYY-MM-DD 형식입니다!
+            allDay: true,
+            extendedProps: { owner: String(item[oKey]) },
+            color: getColorByOwner(String(item[oKey]))
+        };
+    }).filter(e => e !== null);
+
+    res.json(events);
+});
+
+function getColorByOwner(owner) {
+    const colors = { '문창수': '#f87171', '이승직': '#60a5fa', '이도협': '#34d399', '윤진성': '#fbbf24', '김성학': '#a78bfa' };
+    for (const key in colors) { if (owner.includes(key)) return colors[key]; }
+    return '#94a3b8';
+}
+
+app.listen(PORT, () => console.log('서버 가동: http://localhost:3000'));
