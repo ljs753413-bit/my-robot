@@ -28,59 +28,62 @@
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://wbivcaastywioldxvbjc.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_zeZRYYUREQcJyUUsqK-4tg_nmJ8zNuH';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+   <script>
+    // 1. 수파베이스 설정 (이미 중복 선언을 방지하도록 구조화)
+    const SUPABASE_URL = 'https://wbivcaastywioldxvbjc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_zeZRYYUREQcJyUUsqK-4tg_nmJ8zNuH';
+    
+    // 전역 변수로 supabase 클라이언트 생성
+    const mySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let calendar;
+    let calendar;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'ko',
-                // 수정된 부분: 테이블 'tasks', 날짜 컬럼 'due_date'로 변경
-                events: async function(info, successCallback, failureCallback) {
-                    try {
-                        const { data, error } = await supabase
-                            .from('tasks') 
-                            .select('*');
-                        
-                        if (error) throw error;
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            events: async function(info, successCallback, failureCallback) {
+                try {
+                    // mySupabase 사용
+                    const { data, error } = await mySupabase
+                        .from('tasks') 
+                        .select('*');
+                    
+                    if (error) throw error;
 
-                        const formattedEvents = data.map(item => ({
-                            title: item.title,
-                            start: item.due_date, 
-                            extendedProps: { owner: item.owner }
-                        }));
-                        successCallback(formattedEvents);
-                    } catch (error) {
-                        console.error('데이터 로드 실패:', error);
-                        failureCallback(error);
-                    }
-                },
-                eventClick: function(info) {
-                    alert(`📋 [업무 상세 내용]\n${info.event.title}`);
+                    const formattedEvents = data.map(item => ({
+                        title: item.title,
+                        start: item.due_date, 
+                        extendedProps: { owner: item.owner }
+                    }));
+                    successCallback(formattedEvents);
+                } catch (error) {
+                    console.error('데이터 로드 실패:', error);
+                    failureCallback(error);
                 }
-            });
-            calendar.render();
+            },
+            eventClick: function(info) {
+                alert(`📋 [업무 상세 내용]\n${info.event.title}`);
+            }
         });
+        calendar.render();
+    });
 
-        function filterCalendar(owner, btnElement) {
-            btnElement.parentNode.querySelectorAll('button').forEach(b => {
-                b.classList.remove('bg-slate-900', 'text-white');
-            });
-            btnElement.classList.add('bg-slate-900', 'text-white');
+    function filterCalendar(owner, btnElement) {
+        btnElement.parentNode.querySelectorAll('button').forEach(b => {
+            b.classList.remove('bg-slate-900', 'text-white');
+        });
+        btnElement.classList.add('bg-slate-900', 'text-white');
 
-            calendar.getEvents().forEach(ev => {
-                if (owner === '전체' || ev.extendedProps.owner === owner) {
-                    ev.setProp('display', 'auto');
-                } else {
-                    ev.setProp('display', 'none');
-                }
-            });
-        }
-    </script>
+        calendar.getEvents().forEach(ev => {
+            if (owner === '전체' || ev.extendedProps.owner === owner) {
+                ev.setProp('display', 'auto');
+            } else {
+                ev.setProp('display', 'none');
+            }
+        });
+    }
+</script>
 </body>
 </html>
