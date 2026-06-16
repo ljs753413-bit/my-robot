@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>대구사무소 주간 일정 관리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-50 p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">📅 대구사무소 팀원 주간 일정표</h1>
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider">팀원 필터:</span>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-slate-900 text-white shadow-sm" onclick="filterCalendar('전체', this)">전체보기</button>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700" onclick="filterCalendar('문창수', this)">문창수</button>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700" onclick="filterCalendar('이승직', this)">이승직</button>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700" onclick="filterCalendar('이도협', this)">이도협</button>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700" onclick="filterCalendar('윤진성', this)">윤진성</button>
+            <button class="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700" onclick="filterCalendar('김성학', this)">김성학</button>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://wbivcaastywioldxvbjc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_zeZRYYUREQcJyUUsqK-4tg_nmJ8zNuH';
+        
+        const mySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ko',
+                events: async function(info, successCallback, failureCallback) {
+                    try {
+                        const { data, error } = await mySupabase
+                            .from('tasks') 
+                            .select('*');
+                        
+                        if (error) throw error;
+
+                        const formattedEvents = data.map(item => {
+                            // 필터 버튼의 색상과 일치하도록 정확한 색상 코드 매핑
+                            let eventColor = '#64748b'; // 기본 색상 (slate-500)
+                            switch(item.owner) {
+                                case '문창수': eventColor = '#e11d48'; break; // 빨강 (red-600)
+                                case '이승직': eventColor = '#2563eb'; break; // 파랑 (blue-600)
+                                case '이도협': eventColor = '#059669'; break; // 초록 (emerald-600)
+                                case '윤진성': eventColor = '#d97706'; break; // 주황 (amber-600)
+                                case '김성학': eventColor = '#7c3aed'; break; // 보라 (purple-600)
+                            }
+
+                            return {
+                                title: item.title,
+                                start: item.due_date,
+                                extendedProps: { owner: item.owner },
+                                backgroundColor: eventColor,
+                                borderColor: eventColor
+                            };
+                        });
+                        successCallback(formattedEvents);
+                    } catch (error) {
+                        console.error('데이터 로드 실패:', error);
+                        failureCallback(error);
+                    }
+                },
+                eventClick: function(info) {
+                    alert(`📋 [업무 상세 내용]\n${info.event.title}`);
+                }
+            });
+            calendar.render();
+        });
+
+        function filterCalendar(owner, btnElement) {
+            btnElement.parentNode.querySelectorAll('button').forEach(b => {
+                b.classList.remove('bg-slate-900', 'text-white');
+            });
+            btnElement.classList.add('bg-slate-900', 'text-white');
+
+            calendar.getEvents().forEach(ev => {
+                if (owner === '전체' || ev.extendedProps.owner === owner) {
+                    ev.setProp('display', 'auto');
+                } else {
+                    ev.setProp('display', 'none');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
